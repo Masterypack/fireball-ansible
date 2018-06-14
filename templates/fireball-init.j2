@@ -1,0 +1,120 @@
+#!/bin/bash
+
+set -e
+ulimit -n 999999
+
+NAME=fireball
+PIDFILE=/var/run/$NAME.pid
+
+DAEMON=/usr/bin/fireball
+DAEMON_LOG_FILE="{{ fireball_log_file }}"
+
+REMOTE_ARGS="--connect-timeout {{ fireball_remote_connect_timeout }} --retry {{ fireball_remote_retry }} --retry-delay {{ fireball_remote_retry_delay }}"
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+if [[ `ls $DAEMON | wc -l` != 1 ]]; then
+    echo "Fireball binary is not installed! Exiting .."
+    exit 1
+fi
+
+case "$1" in
+  start)
+        echo "Starting daemon: $NAME"
+        touch $PIDFILE
+        PID=`cat $PIDFILE`
+
+        if [[ "$PID" == "" ]]; then
+            PID=0
+        fi
+
+        if ps -p $PID > /dev/null; then
+            echo "Already running."
+            exit 1
+        else
+            CURL_ARG_NUM=`cat /etc/fireball/remote | wc -l`
+            nohup $DAEMON "--logfile $DAEMON_LOG_FILE $REMOTE_ARGS" <<< "`\
+                if [[ -d /etc/fireball ]]; then \
+                    find /etc/fireball/ -type f -name '*.fireball' -exec zcat -f '{}' \;; \
+                    find /etc/fireball/ -type f -name '*.fireball.gz' -exec zcat -f '{}' \;; \
+                    if [[ -f /etc/fireball/remote && $CURL_ARG_NUM -gt 0 ]]; then curl -s -f -K /etc/fireball/remote $REMOTE_ARGS | zcat -f 2> /dev/null; fi ; \
+                fi`" >> $DAEMON_LOG_FILE 2>&1 &
+
+            echo $! > $PIDFILE
+        fi
+        echo ""
+        ;;
+  stop)
+        echo "Stopping daemon: $NAME"
+        touch $PIDFILE
+        PID=`cat $PIDFILE`
+
+        if [[ "$PID" == "" ]]; then
+            echo "Application not running."
+            exit 0
+        else
+            kill $PID 2> /dev/null
+            while kill -0 $PID > /dev/null 2>&1; do
+                sleep 1
+            done
+        fi
+        echo ""
+        ;;
+  restart)
+        echo "Restarting daemon: $NAME"
+        touch $PIDFILE
+        PID=`cat $PIDFILE`
+
+        if [[ "$PID" != "" ]]; then
+            kill $PID 2> /dev/null
+            while kill -0 $PID > /dev/null 2>&1; do
+                sleep 1
+            done
+        fi
+
+        CURL_ARG_NUM=`cat /etc/fireball/remote | wc -l`
+        nohup $DAEMON "--logfile $DAEMON_LOG_FILE $REMOTE_ARGS" <<< "`\
+            if [[ -d /etc/fireball ]]; then \
+                find /etc/fireball/ -type f -name '*.fireball' -exec zcat -f '{}' \;; \
+                find /etc/fireball/ -type f -name '*.fireball.gz' -exec zcat -f '{}' \;; \
+                if [[ -f /etc/fireball/remote && $CURL_ARG_NUM -gt 0 ]]; then curl -s -f -K /etc/fireball/remote $REMOTE_ARGS | zcat -f 2> /dev/null; fi ; \
+            fi`" >> $DAEMON_LOG_FILE 2>&1 &
+
+        echo $! > $PIDFILE
+        echo ""
+        ;;
+  showconfig)
+        echo "Analyzing configuration: $NAME"
+        if [[ -d /etc/fireball ]]; then
+            echo ""
+            echo "Local configuration:"
+
+            find /etc/fireball/ -type f -name '*.fireball' | while read FILE; do
+                echo " - $FILE"
+            done
+
+            find /etc/fireball/ -type f -name '*.fireball.gz' | while read FILE; do
+                echo " - $FILE"
+            done
+
+            echo ""
+            echo "Remote configuration:"
+            if [[ -f /etc/fireball/remote ]]; then
+                cat /etc/fireball/remote | while read URL; do
+                     echo " - $URL"
+                done
+            else
+                echo "Remote configuration file is not present (/etc/fireball/remote)."
+
+            fi
+        else
+            echo "Configuration directory doesn't exist (/etc/fireball)."
+        fi
+        echo ""
+        ;;
+  *)
+        echo "Usage: "$1" {start|stop|restart|showconfig}"
+        exit 1
+esac
+
+exit 0

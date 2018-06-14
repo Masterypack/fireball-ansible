@@ -1,0 +1,58 @@
+- name: creating Fireball init file
+  template:
+    src: "fireball-init.j2"
+    dest: "/etc/init.d/fireball"
+    owner: "root"
+    group: "root"
+    mode: "755"
+
+- name: populating /etc/fireball with configuration files
+  synchronize:
+    src: "config/"
+    dest: "/etc/fireball/"
+    delete: "yes"
+    recursive: "yes"
+
+- name: fixing /etc/fireball permissions
+  shell: chown -R root:root /etc/fireball ; chmod -R 755 /etc/fireball
+
+- name: creating directory structure for Fireball logs
+  file:
+    path: "{{ fireball_log_file_dir }}"
+    state: "directory"
+
+- name: initializing log file
+  copy:
+    content: ""
+    dest: "{{ fireball_log_file }}"
+    force: "no"
+    owner: "root"
+    group: "root"
+    mode: "755"
+
+- name: initializing pid file
+  copy:
+    content: ""
+    dest: "/var/run/fireball.pid"
+    force: "no"
+    owner: "root" 
+    group: "root"
+    mode: "755"
+
+- name: copying Fireball binary
+  copy:
+    src: "releases/fireball-{{ fireball_version }}-{{ fireball_release }}.{{ fireball_os }}.{{ fireball_arch }}"
+    dest: "/usr/bin/fireball"
+    owner: "root"
+    group: "root"
+    mode: "755"
+
+- name: register Fireball as service
+  service:
+    name: "fireball"
+    enabled: "yes"
+
+- name: Fireball service restart
+  service:
+    name: "fireball"
+    state: "restarted"
