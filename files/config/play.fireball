@@ -1,6 +1,0 @@
-SET LOG_LEVEL "debug";
-SET SELECT_CACHE "on";
-START MONITOR "servers" 60;
-START MONITOR "tables" 60;
-CREATE TABLE test1 ({"Size":1000, "LongPollWaitMs":2000,"LongPollMaxClients":100,"BufferSize":0});
-CREATE SERVER MYSQL test2 ({"Bind":"0.0.0.0:6400", "LatencyTargetMs":0.0001});

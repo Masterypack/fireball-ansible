@@ -6,53 +6,38 @@
     group: "root"
     mode: "755"
 
-- name: populating /etc/fireball with configuration files
-  synchronize:
-    src: "config/"
-    dest: "/etc/fireball/"
-    delete: "yes"
-    recursive: "yes"
-
-- name: fixing /etc/fireball permissions
-  shell: chown -R root:root /etc/fireball ; chmod -R 755 /etc/fireball
-
-- name: creating directory structure for Fireball logs
-  file:
-    path: "{{ fireball_log_file_dir }}"
-    state: "directory"
-
-- name: initializing log file
-  copy:
-    content: ""
-    dest: "{{ fireball_log_file }}"
-    force: "no"
+- name: creating Fireball systemd service file
+  template:
+    src: "fireball.service.j2"
+    dest: "/lib/systemd/system/fireball.service"
     owner: "root"
     group: "root"
     mode: "755"
 
-- name: initializing pid file
-  copy:
-    content: ""
-    dest: "/var/run/fireball.pid"
-    force: "no"
-    owner: "root" 
-    group: "root"
-    mode: "755"
+- name: creating /etc/fireball
+  file:
+    path: "/etc/fireball"
+    state: "directory"
+
+- name: stoppping fireball
+  shell: service fireball stop
+  ignore_errors: True
 
 - name: copying Fireball binary
-  copy:
-    src: "releases/fireball-{{ fireball_version }}-{{ fireball_release }}.{{ fireball_os }}.{{ fireball_arch }}"
+  get_url:
+    url: "{{ fireball_download_url }}"
+    url_username: "{{ fireball_download_user }}"
+    url_password: "{{ fireball_download_password }}"
     dest: "/usr/bin/fireball"
     owner: "root"
     group: "root"
     mode: "755"
+    force: "yes"
 
+- name: fixing /etc/fireball permissions
+  shell: chown -R root:root /etc/fireball ; chmod -R 755 /etc/fireball
+  
 - name: register Fireball as service
   service:
     name: "fireball"
     enabled: "yes"
-
-- name: Fireball service restart
-  service:
-    name: "fireball"
-    state: "restarted"
