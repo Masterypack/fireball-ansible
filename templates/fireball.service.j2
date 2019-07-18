@@ -1,0 +1,14 @@
+[Unit]
+Description=Fireball
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/fireball.pid
+ExecStart=/etc/init.d/fireball start
+ExecStop=/etc/init.d/fireball stop
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

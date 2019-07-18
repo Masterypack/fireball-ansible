@@ -7,7 +7,8 @@ NAME=fireball
 PIDFILE=/var/run/$NAME.pid
 
 DAEMON=/usr/bin/fireball
-DAEMON_LOG_FILE="{{ fireball_log_file }}"
+DAEMON_LOG_STDOUT="{{ fireball_log_stdout }}"
+DAEMON_LOG_STDERR="{{ fireball_log_stderr }}"
 
 REMOTE_ARGS="--connect-timeout {{ fireball_remote_connect_timeout }} --retry {{ fireball_remote_retry }} --retry-delay {{ fireball_remote_retry_delay }}"
 
@@ -33,12 +34,12 @@ case "$1" in
             exit 1
         else
             CURL_ARG_NUM=`cat /etc/fireball/remote | wc -l`
-            nohup $DAEMON "--logfile $DAEMON_LOG_FILE $REMOTE_ARGS" <<< "`\
+            nohup $DAEMON "--stdout $DAEMON_LOG_STDOUT --stderr $DAEMON_LOG_STDERR $REMOTE_ARGS" <<< "`\
                 if [[ -d /etc/fireball ]]; then \
                     find /etc/fireball/ -type f -name '*.fireball' -exec zcat -f '{}' \;; \
                     find /etc/fireball/ -type f -name '*.fireball.gz' -exec zcat -f '{}' \;; \
                     if [[ -f /etc/fireball/remote && $CURL_ARG_NUM -gt 0 ]]; then curl -s -f -K /etc/fireball/remote $REMOTE_ARGS | zcat -f 2> /dev/null; fi ; \
-                fi`" >> $DAEMON_LOG_FILE 2>&1 &
+                fi`" >> $DAEMON_LOG_STDOUT 2>>$DAEMON_LOG_STDERR &
 
             echo $! > $PIDFILE
         fi
@@ -73,12 +74,12 @@ case "$1" in
         fi
 
         CURL_ARG_NUM=`cat /etc/fireball/remote | wc -l`
-        nohup $DAEMON "--logfile $DAEMON_LOG_FILE $REMOTE_ARGS" <<< "`\
+        nohup $DAEMON "--stdout $DAEMON_LOG_STDOUT --stderr $DAEMON_LOG_STDERR $REMOTE_ARGS" <<< "`\
             if [[ -d /etc/fireball ]]; then \
                 find /etc/fireball/ -type f -name '*.fireball' -exec zcat -f '{}' \;; \
                 find /etc/fireball/ -type f -name '*.fireball.gz' -exec zcat -f '{}' \;; \
                 if [[ -f /etc/fireball/remote && $CURL_ARG_NUM -gt 0 ]]; then curl -s -f -K /etc/fireball/remote $REMOTE_ARGS | zcat -f 2> /dev/null; fi ; \
-            fi`" >> $DAEMON_LOG_FILE 2>&1 &
+            fi`" >> $DAEMON_LOG_STDOUT 2>>$DAEMON_LOG_STDERR &
 
         echo $! > $PIDFILE
         echo ""
