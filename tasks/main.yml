@@ -37,13 +37,13 @@
 - name: fixing /etc/fireball permissions
   shell: chown -R root:root /etc/fireball ; chmod -R 755 /etc/fireball
   
-- name: register Fireball as service
+- name: register Fireball as service (init.d)
   service:
     name: "fireball"
     enabled: "yes"
   when: fireball_init_d is defined
 
-- name: register Fireball as service
+- name: register Fireball as service (systemd)
   systemd:
     name: "fireball"
     enabled: "yes"
