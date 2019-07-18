@@ -41,3 +41,11 @@
   service:
     name: "fireball"
     enabled: "yes"
+  when: fireball_init_d is defined
+
+- name: register Fireball as service
+  systemd:
+    name: "fireball"
+    enabled: "yes"
+    daemon_reload: "yes"
+  when: fireball_init_d is not defined
