@@ -33,7 +33,7 @@
     bucket: "{{ fireball_releases_bucket }}"
     dest: "/usr/bin/fireball"
     gs_access_key: "{{ fireball_releases_access_key }}"
-    gc_secret_key: "{{ fireball_releases_secret_key }}"
+    gs_secret_key: "{{ fireball_releases_secret_key }}"
     mode: "get"
     object: "{{ fireball_releases_file }}"
     region: "NAM4"
