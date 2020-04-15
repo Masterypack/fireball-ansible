@@ -29,28 +29,33 @@
   ignore_errors: True
 
 - name: copying Fireball binary
-  get_url:
-    url: "{{ fireball_download_url }}"
-    url_username: "{{ fireball_download_user }}"
-    url_password: "{{ fireball_download_password }}"
+  gc_storage:
+    bucket: "{{ fireball_releases_bucket }}"
     dest: "/usr/bin/fireball"
+    gs_access_key: "{{ fireball_releases_access_key }}"
+    gc_secret_key: "{{ fireball_releases_secret_key }}"
+    mode: "get"
+    object: "{{ fireball_releases_file }}"
+    region: "NAM4"
+
+- name: setting permissions for /usr/bin/fireball
+  file:
+    path: "/usr/bin/fireball"
     owner: "root"
     group: "root"
     mode: "755"
-    force: "yes"
 
-- name: fixing /etc/fireball permissions
-  shell: chown -R root:root /etc/fireball ; chmod -R 755 /etc/fireball
-  
-- name: register Fireball as service (init.d)
-  service:
-    name: "fireball"
-    enabled: "yes"
-  when: fireball_init_d is defined
+- name: setting permissions for /etc/fireball
+  file:
+    path: "/etc/fireball"
+    state: "directory"
+    recurse: "yes"
+    owner: "root"
+    group: "root"
+    mode: "755"
 
-- name: register Fireball as service (systemd)
+- name: register Fireball as service
   systemd:
     name: "fireball"
     enabled: "yes"
     daemon_reload: "yes"
-  when: fireball_init_d is not defined
